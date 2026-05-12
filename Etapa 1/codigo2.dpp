@@ -1,0 +1,32 @@
+{-
+   Arquivo 2: Testando Orientacao a Objetos (Classes, heranca e atributos abstratos).
+-}
+
+family Animal derives from Root &
+family Cachorro derives from Animal .
+
+family Animal start
+    alterable number peso << 0 .
+
+    procedure emitirSom [] .
+    function answer isMamifero [] .
+finish
+
+family Cachorro start
+    alterable number idade << 0 .
+    object Cachorro amigo .
+    
+    -- Objeto necessario para interacao com a tela
+    object Periphericals console .
+
+    procedure emitirSom [] start
+        -- Metodo publico da classe Periphericals chamado via objeto
+        console.show[1] . 
+    finish
+    
+    function answer isMamifero [] yes .
+
+    procedure alimentarAmigo [ number quilos_racao ] start
+        amigo.peso << amigo.peso + quilos_racao .
+    finish
+finish

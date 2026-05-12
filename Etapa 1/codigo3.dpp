@@ -1,0 +1,53 @@
+{-
+   Arquivo 3: Testando laco de repeticao, condicionais, operadores 
+              logicos/relacionais, bloco de expressao com retorno,
+              e chamadas de funcao com multiplos parametros.
+-}
+family Jogo derives from Root .
+
+family Jogo start
+
+    -- Funcao que exige dois parametros
+    function number testarPontuacao [ number pontos | number limite ] start
+        alterable number contador << 0 .
+        alterable answer atingiu_meta << no .
+
+        as long as (contador < limite) start
+            
+            -- Condicional utilizando todos os operadores logicos obrigatorios
+            in case that (pontos > 100 and !atingiu_meta or pontos = 50) start
+                contador << contador + 10 .
+            finish otherwise start
+                contador << contador + 1 .
+            finish
+            
+        finish .
+
+        in case that (contador > limite) 
+            atingiu_meta << yes .
+
+        start
+            alterable number bonus << 0 .
+
+            -- O operador ternario inteiro atua como a unica 'exp' do bloco
+            if (atingiu_meta = yes) start
+                bonus << pontos * 2 .
+            finish else start
+                bonus << pontos .
+            finish
+            bonus
+        finish
+    finish .
+
+    -- Procedimento adicionado para executar a chamada multipla
+    >> procedure iniciar [] start
+        alterable number resultado_final << 0 .
+        object Periphericals io .
+        
+        -- Aqui ocorre a regra lista_exp: passando multiplas expressoes separadas por '|'
+        resultado_final << testarPontuacao[ 120 | 50 ] .
+        
+        io.show[resultado_final] .
+    finish
+
+finish

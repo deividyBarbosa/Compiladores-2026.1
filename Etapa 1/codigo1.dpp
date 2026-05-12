@@ -1,0 +1,24 @@
+{-
+   Arquivo 1: Testando declaracoes, I/O e expressoes matematicas basicas.
+-}
+family Calculadora derives from Root .
+
+family Calculadora start
+    unalterable number constante_pi << 3.14 .
+    
+    -- Declarando o objeto para usar os metodos de entrada e saida
+    object Periphericals io .
+
+    >> procedure iniciar [] start
+        alterable number valor << 0 .
+        alterable number resultado << 0 .
+        
+        -- Chamada da funcao de captura atraves do objeto 'io'
+        valor << io.capture[] .
+        
+        resultado << (valor + 10) * 2 / constante_pi - -5 .
+        
+        -- Chamada do procedimento de exibicao
+        io.show[resultado] .
+    finish
+finish
