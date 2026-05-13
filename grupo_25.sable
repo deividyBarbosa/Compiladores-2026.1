@@ -1,189 +1,118 @@
 /* ============================================================
-   Disciplina: Compiladores - UFS  |  Turmas T01/T02 2026.1
+   Disciplina: Compiladores - UFS  |  Turma T02 2026.1
    Linguagem  : D++
    Etapa 2    : Análise Léxica
-   Ferramenta : SableCC
-   Pacote     : dplusplus
    ============================================================ */
 
 Package dplusplus;
 
-/* -----------------------------------------------------------
-   HELPERS
-   Definições auxiliares de conjuntos de caracteres e
-   expressões regulares usadas nos tokens.
-   ----------------------------------------------------------- */
 Helpers
 
-    /* Conjuntos de caracteres básicos */
-    lowercase   = ['a'..'z'];
-    uppercase   = ['A'..'Z'];
-    letter      = lowercase | uppercase;
-    underscore  = '_';
-    digit       = ['0'..'9'];
-
-    /* Caracteres usados em identificadores (sem dígitos, conforme spec) */
-    id_char     = letter | underscore;
-
-    /* Controle de fim de linha */
-    cr          = '\r';
-    lf          = '\n';
-    eol         = '\r' '\n' | '\r' | '\n';
-    not_eol     = [[0..0xffff] - ['\r' + '\n']];
-
-    /* Universo de caracteres (Unicode básico) */
-    any_char    = [0..0xffff];
-
-    /* Auxiliares para comentario de bloco {- ... -}
-       Semantica identica a C: o primeiro '-}' fecha o bloco.
-       block_comment_char cobre TUDO exceto a sequencia '-}':
-         - qualquer char que nao seja '-'
-         - '-' seguido de qualquer char que nao seja '}'   */
-    not_dash    = [any_char - '-'];
-    not_rbrace  = [any_char - '}'];
-
-    block_comment_char = not_dash | ('-' not_rbrace);
-    block_comment      = '{-' block_comment_char* '-}';
-
-    /* Comentário de linha: '--' até o fim da linha
-       (A spec indica "no início da linha"; na prática do compilador
-        tratamos '--' como marcador de início de comentário em qualquer
-        posição, o que é a interpretação padrão de analisadores léxicos.) */
-    line_comment = '--' not_eol*;
+   lowercase = ['a' .. 'z'];
+   uppercase = ['A' .. 'Z'];
+   letter = lowercase | uppercase;
+   digit = ['0' .. '9'];
+   underscore = '_';
+   id_char = letter | underscore;
 
 
-/* -----------------------------------------------------------
-   TOKENS
-   Listados na ordem de prioridade de SableCC:
-   quando dois padrões reconhecem a mesma cadeia com o mesmo
-   comprimento, vence o que aparece primeiro no arquivo.
-   Palavras reservadas DEVEM vir antes dos identificadores.
-   ----------------------------------------------------------- */
+/*------ espaços, tabs, quebras de linha, comentários ------*/
+
+   cr = 13; // carriage return
+   lf = 10; // line feed
+   tab = 9;
+   eol = cr lf | cr | lf;  // quebras de linha
+
+   not_eol = [[0 .. 0xffff] - [cr + lf]];
+
+   any = [0 .. 0xffff];
+   not_dash = [any - '-'];
+   not_rbrace = [any - '}'];
+   block_comment_char = not_dash | ('-' not_rbrace);
+   
+   block_comment = '{-' block_comment_char* '-}';
+   line_comment = '--' not_eol*;
+
 Tokens
 
-    /* ── Espaço em branco ──────────────────────────────────── */
-    blank             = (' ' | '\t' | eol)+;
+   blank = (' ' | tab | eol)+;
 
-    /* ── Comentários ────────────────────────────────────────── */
-    t_line_comment    = line_comment;
-    t_block_comment   = block_comment;
+   t_line_comment = line_comment;
+   t_block_comment = block_comment;
 
-    /* ── Palavras reservadas ─────────────────────────────────
-       Devem preceder 'id' e 'id_classe' para que, no empate de
-       comprimento máximo, a palavra reservada vença o identificador. */
+   kw_family = 'family';
+   kw_derives = 'derives';
+   kw_from = 'from';
 
-    /* Estrutura de classes / herança */
-    kw_family         = 'family';
-    kw_derives        = 'derives';
-    kw_from           = 'from';
+   kw_start = 'start';
+   kw_finish = 'finish';
 
-    /* Delimitadores de bloco */
-    kw_start          = 'start';
-    kw_finish         = 'finish';
+   kw_object = 'object';
+   kw_alterable = 'alterable';
+   kw_unalterable = 'unalterable';
 
-    /* Declarações */
-    kw_object         = 'object';
-    kw_alterable      = 'alterable';
-    kw_unalterable    = 'unalterable';
+   kw_answer = 'answer';
+   kw_number = 'number';
 
-    /* Tipos primitivos */
-    kw_answer         = 'answer';
-    kw_number         = 'number';
+   valor_yes = 'yes';
+   valor_no = 'no';
 
-    /* Literais booleanos */
-    kw_yes            = 'yes';
-    kw_no             = 'no';
+   kw_procedure = 'procedure';
+   kw_function = 'function';
 
-    /* Métodos */
-    kw_procedure      = 'procedure';
-    kw_function       = 'function';
+   kw_in = 'in';
+   kw_case = 'case';
+   kw_that = 'that';
+   kw_otherwise = 'otherwise';
 
-    /* Estrutura condicional: in case that ... otherwise */
-    kw_in             = 'in';
-    kw_case           = 'case';
-    kw_that           = 'that';
-    kw_otherwise      = 'otherwise';
+   kw_as = 'as';
+   kw_long = 'long';
 
-    /* Estrutura de repetição: as long as */
-    kw_as             = 'as';
-    kw_long           = 'long';
+   kw_if = 'if';
+   kw_else = 'else';
 
-    /* Operador ternário: if ( exp ) exp else exp */
-    kw_if             = 'if';
-    kw_else           = 'else';
+   valor_real = digit+ '.' digit+;
+   valor_inteiro = digit+;
+   
+   op_assign = '<<';
+   op_entry = '>>';
 
-    /* Operadores booleanos */
-    kw_and            = 'and';
-    kw_or             = 'or';
+/*------ operadores aritméticos ------*/
+   op_plus = '+';
+   op_minus = '-';
+   op_mult = '*';
+   op_div = '/';
 
-    /* ── Identificadores ────────────────────────────────────── */
-    /* ID_CLASSE: começa com maiúscula                           */
-    id_classe         = uppercase id_char*;
+/*------ operadores relacionais ------*/
+   op_eq = '=';
+   op_lt = '<';
+   op_gt = '>';
 
-    /* ID: começa com minúscula                                  */
-    id                = lowercase id_char*;
-
-    /* ── Literais numéricos ──────────────────────────────────
-       valor_real ANTES de valor_inteiro: "3.14" casa 4 chars
-       como real; se viesse depois, "3" (1 char) venceria por
-       estar primeiro — mas o casamento máximo já resolve isso.
-       A ordem garante comportamento correto em todos os casos. */
-    valor_real        = digit+ '.' digit+;
-    valor_inteiro     = digit+;
-
-    /* ── Operadores compostos (> 1 char, listados antes dos simples) ── */
-    op_assign         = '<<';   /* atribuição         */
-    op_entry          = '>>';   /* marcador de entrada */
-
-    /* ── Operadores aritméticos ──────────────────────────────── */
-    op_plus           = '+';
-    op_minus          = '-';
-    op_mult           = '*';
-    op_div            = '/';
-
-    /* ── Operadores relacionais ──────────────────────────────── */
-    op_eq             = '=';
-    op_lt             = '<';
-    op_gt             = '>';
-
-    /* ── Operador de negação booleana ────────────────────────── */
-    op_not            = '!';
-
-    /* ── Pontuação / separadores ─────────────────────────────── */
-    l_bracket         = '[';    /* abertura de lista de parâmetros / chamada */
-    r_bracket         = ']';    /* fechamento                                */
-    l_par             = '(';    /* abertura de expressão / condicional        */
-    r_par             = ')';    /* fechamento                                 */
-    dot               = '.';    /* terminador de comando e acesso a membro    */
-    pipe              = '|';    /* separador de parâmetros / expressões       */
-    amp               = '&';    /* separador de relações de herança           */
+/*------ operadores booleanos ------*/
+   op_and = 'and';
+   op_or = 'or';
+   op_not = '!';
 
 
-/* -----------------------------------------------------------
-   IGNORED TOKENS
-   Tokens reconhecidos mas descartados pelo analisador.
-   ----------------------------------------------------------- */
+   l_bracket = '[';
+   r_bracket = ']';
+   l_par = '(';
+   r_par = ')';
+   dot = '.';
+   pipe = '|';
+   amp = '&';
+
+   id_classe = uppercase id_char*;
+   id = lowercase id_char*;
+
 Ignored Tokens
-    blank,
-    t_line_comment,
-    t_block_comment;
+   blank,
+   t_line_comment,
+   t_block_comment;
 
-
-/* -----------------------------------------------------------
-   PRODUCTIONS  (stub mínimo para Etapa 2)
-   SableCC exige a seção Productions para gerar o léxico.
-   Esta gramática será expandida na Etapa 3.
-   ----------------------------------------------------------- */
 Productions
 
-    /*
-     * Stub intencional para Etapa 2.
-     * A gramatica completa sera implementada na Etapa 3.
-     */
-    programa
-        = def_classe+
-        ;
+   programa = def_classe+;
 
-    def_classe
-        = kw_family id_classe kw_start kw_finish
-        ;
+   def_classe =
+      kw_family id_classe kw_start kw_finish;
