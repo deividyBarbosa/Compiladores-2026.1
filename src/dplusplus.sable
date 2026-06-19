@@ -171,16 +171,23 @@ Productions
 
    parametros_tail = pipe parametro;
    parametro = tipo id;
-
+   
    comando = 
-       {if} if_expr
-      |{if_else} if_expr kw_otherwise comando
+      {matched} comando_casado
+      |{unmatched} comando_nao_casado;
+   
+   comando_nao_casado = 
+      {if_sem_else} if_expr comando_nao_casado
+      |{if_pendente} if_expr comando_casado kw_otherwise comando_nao_casado;
+
+   comando_casado = 
+       {if} if_expr [c1]:comando_casado kw_otherwise [c2]:comando_casado
       |{while} [as1]:kw_as kw_long [as2]:kw_as l_par exp r_par comando
       |{atribuicao} id op_assign exp dot
       |{chamada} chamada dot
       |{bloco} bloco_cmd;
-   
-   if_expr = kw_in kw_case kw_that l_par exp r_par comando;
+
+   if_expr = kw_in kw_case kw_that l_par exp r_par;
 
    bloco_cmd = kw_start atributos_alt* comando* kw_finish;
 
@@ -226,7 +233,6 @@ Productions
       |{inteiro} valor_inteiro
       |{yes} valor_yes
       |{no} valor_no
-      |{id} id
       |{chamada} chamada
       |{atributo} acesso* atributo
       |{parenteses} l_par exp r_par
@@ -240,3 +246,4 @@ Productions
       |{lista} exp lista_exp_tail*;
    
    lista_exp_tail = pipe exp;   
+
