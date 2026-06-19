@@ -1,0 +1,242 @@
+/* ============================================================
+   Disciplina: Compiladores - UFS  |  Turma T02 2026.1
+   Linguagem  : D++
+   Etapa 3    : Análise Sintática
+   Grupo 25
+   ============================================================ */
+
+Package dplusplus;
+
+Helpers
+
+   lowercase = ['a' .. 'z'];
+   uppercase = ['A' .. 'Z'];
+   letter = lowercase | uppercase;
+   digit = ['0' .. '9'];
+   underscore = '_';
+   id_char = letter | underscore;
+
+
+/*------ espaços, tabs, quebras de linha, comentários ------*/
+
+   cr = 13; // carriage return
+   lf = 10; // line feed
+   tab = 9;
+   eol = cr lf | cr | lf;  // quebras de linha
+
+   not_eol = [[0 .. 0xffff] - [cr + lf]];
+
+   any = [0 .. 0xffff];
+   not_dash = [any - '-'];
+   not_rbrace = [any - '}'];
+   block_comment_char = not_dash | ('-' not_rbrace);
+   
+   block_comment = '{-' block_comment_char* '-}';
+   line_comment = '--' not_eol*;
+
+Tokens
+
+   blank = (' ' | tab | eol)+;
+
+   t_line_comment = line_comment;
+   t_block_comment = block_comment;
+
+   kw_family = 'family';
+   kw_derives = 'derives';
+   kw_from = 'from';
+
+   kw_start = 'start';
+   kw_finish = 'finish';
+
+   kw_object = 'object';
+   kw_alterable = 'alterable';
+   kw_unalterable = 'unalterable';
+
+   kw_answer = 'answer';
+   kw_number = 'number';
+
+   valor_yes = 'yes';
+   valor_no = 'no';
+
+   kw_procedure = 'procedure';
+   kw_function = 'function';
+
+   kw_in = 'in';
+   kw_case = 'case';
+   kw_that = 'that';
+   kw_otherwise = 'otherwise';
+
+   kw_as = 'as';
+   kw_long = 'long';
+
+   kw_if = 'if';
+   kw_else = 'else';
+
+   valor_real = digit+ '.' digit+;
+   valor_inteiro = digit+;
+   
+   op_assign = '<<';
+   op_entry = '>>';
+
+/*------ operadores aritméticos ------*/
+   op_plus = '+';
+   op_minus = '-';
+   op_mult = '*';
+   op_div = '/';
+
+/*------ operadores relacionais ------*/
+   op_eq = '=';
+   op_lt = '<';
+   op_gt = '>';
+
+/*------ operadores booleanos ------*/
+   op_and = 'and';
+   op_or = 'or';
+   op_not = '!';
+
+
+   l_bracket = '[';
+   r_bracket = ']';
+   l_par = '(';
+   r_par = ')';
+   dot = '.';
+   pipe = '|';
+   amp = '&';
+   seta = '->';
+
+   id_classe = uppercase id_char*;
+   id = lowercase id_char*;
+
+Ignored Tokens
+   blank,
+   t_line_comment,
+   t_block_comment;
+
+Productions
+
+   programa = genealogia? def_classe+;
+   
+   genealogia = relacao amp_relacao* dot;
+   amp_relacao = amp relacao;
+   
+   relacao = family_classe kw_derives kw_from tipo_classe;
+  
+   def_classe = family_classe kw_start atributos metodos kw_finish;
+   family_classe = kw_family tipo_classe;
+   
+    
+
+   atributos = atributos_alt*;
+   atributos_alt = 
+   		 {objeto} dec_obj
+   		|{variavel} dec_var
+   		|{constante} dec_cons; 
+   
+   metodos = metodos_alt*;
+   metodos_alt =
+       {procedimento} dec_procedimento
+      |{funcao} dec_funcao;
+   
+   dec_obj = kw_object tipo_classe id dot;
+   dec_var = kw_alterable tipo_primitivo id op_assign exp dot;
+   dec_cons = kw_unalterable tipo_primitivo id op_assign exp dot;
+
+   
+   tipo = 
+     	 {classe} tipo_classe
+    	|{primitivo} tipo_primitivo;
+   
+   tipo_classe = id_classe;
+   
+   tipo_primitivo = 
+		{answer} kw_answer      
+		|{number} kw_number;
+
+   dec_procedimento = 
+       {concreto} op_entry? procedure_header bloco_cmd
+      |{abstrato} procedure_header dot;
+
+   procedure_header = kw_procedure id l_bracket parametros r_bracket;
+   
+   dec_funcao =
+      {concreta} function_header bloco_exp
+    | {abstrata} function_header dot;
+
+   function_header =
+      kw_function tipo id l_bracket parametros r_bracket;
+
+   parametros = 
+       {vazio}
+      |{lista} parametro parametros_tail*;
+
+   parametros_tail = pipe parametro;
+   parametro = tipo id;
+
+   comando = 
+       {if} if_expr
+      |{if_else} if_expr kw_otherwise comando
+      |{while} [as1]:kw_as kw_long [as2]:kw_as l_par exp r_par comando
+      |{atribuicao} id op_assign exp dot
+      |{chamada} chamada dot
+      |{bloco} bloco_cmd;
+   
+   if_expr = kw_in kw_case kw_that l_par exp r_par comando;
+
+   bloco_cmd = kw_start atributos_alt* comando* kw_finish;
+
+   chamada = acesso* id l_bracket lista_exp r_bracket;
+   acesso = id seta;
+
+   exp =
+        {ternario} kw_if l_par [exp1]:exp r_par [exp2]:exp kw_else [exp3]:exp
+      | {or} exp_or;
+
+   exp_or =
+        {or} exp_or op_or exp_and
+      | {and} exp_and;
+
+   exp_and =
+         {and} exp_and op_and exp_rel
+      | {rel} exp_rel;
+
+   exp_rel =
+         {eq} exp_rel op_eq exp_add
+      | {lt} exp_rel op_lt exp_add
+      | {gt} exp_rel op_gt exp_add
+      | {add} exp_add;
+
+   exp_add =
+         {plus} exp_add op_plus exp_mul
+      | {minus} exp_add op_minus exp_mul
+      | {mul} exp_mul;
+
+   exp_mul =
+         {mult} exp_mul op_mult exp_unario
+      | {div} exp_mul op_div exp_unario
+      | {unario} exp_unario;
+
+   exp_unario =
+        {neg} op_minus exp_unario
+      | {not} op_not exp_unario
+      | {fator} fator;
+
+
+   fator = 
+      {real} valor_real
+      |{inteiro} valor_inteiro
+      |{yes} valor_yes
+      |{no} valor_no
+      |{id} id
+      |{chamada} chamada
+      |{atributo} acesso* atributo
+      |{parenteses} l_par exp r_par
+      |{bloco} bloco_exp;
+
+
+   bloco_exp = kw_start atributos_alt* exp kw_finish;
+   atributo = id;
+   lista_exp =
+       {vazio}
+      |{lista} exp lista_exp_tail*;
+   
+   lista_exp_tail = pipe exp;   
