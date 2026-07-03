@@ -1,7 +1,7 @@
 /* ============================================================
    Disciplina: Compiladores - UFS  |  Turma T02 2026.1
    Linguagem  : D++
-   Etapa 3    : Análise Sintática
+   Etapa 4    : Analisador Sintático Abstrato
    Grupo 25
    ============================================================ */
 
@@ -114,136 +114,318 @@ Ignored Tokens
 
 Productions
 
-   programa = genealogia? def_classe+;
-   
-   genealogia = relacao amp_relacao* dot;
-   amp_relacao = amp relacao;
-   
-   relacao = family_classe kw_derives kw_from tipo_classe;
-  
-   def_classe = family_classe kw_start atributos metodos kw_finish;
-   family_classe = kw_family tipo_classe;
-   
-    
+   programa {-> programa} =
+      genealogia? def_classe+
+         {-> New programa.programa([genealogia.relacao], [def_classe.def_classe])};
 
-   atributos = atributos_alt*;
-   atributos_alt = 
-   		 {objeto} dec_obj
-   		|{variavel} dec_var
-   		|{constante} dec_cons; 
-   
-   metodos = metodos_alt*;
-   metodos_alt =
-       {procedimento} dec_procedimento
-      |{funcao} dec_funcao;
-   
-   dec_obj = kw_object tipo_classe id dot;
-   dec_var = kw_alterable tipo_primitivo id op_assign exp dot;
-   dec_cons = kw_unalterable tipo_primitivo id op_assign exp dot;
+   genealogia {-> relacao*} =
+      relacao amp_relacao* dot
+         {-> [relacao.relacao, amp_relacao.relacao]};
 
-   
-   tipo = 
-     	 {classe} tipo_classe
-    	|{primitivo} tipo_primitivo;
-   
-   tipo_classe = id_classe;
-   
-   tipo_primitivo = 
-		{answer} kw_answer      
-		|{number} kw_number;
+   amp_relacao {-> relacao} =
+      amp relacao
+         {-> relacao.relacao};
 
-   dec_procedimento = 
+   relacao {-> relacao} =
+      family_classe kw_derives kw_from tipo_classe
+         {-> New relacao.relacao(family_classe.tipo_classe, tipo_classe)};
+
+   def_classe {-> def_classe} =
+      family_classe kw_start atributos metodos kw_finish
+         {-> New def_classe.def_classe(
+               family_classe.tipo_classe,
+               [atributos.atributos_alt],
+               [metodos.metodos_alt])};
+
+   family_classe {-> tipo_classe} =
+      kw_family tipo_classe
+         {-> tipo_classe};
+
+   atributos {-> atributos_alt*} =
+      atributos_alt*
+         {-> [atributos_alt.atributos_alt]};
+
+   atributos_alt {-> atributos_alt} =
+       {objeto}    dec_obj   {-> dec_obj.atributos_alt}
+      |{variavel}  dec_var   {-> dec_var.atributos_alt}
+      |{constante} dec_cons  {-> dec_cons.atributos_alt};
+
+   metodos {-> metodos_alt*} =
+      metodos_alt*
+         {-> [metodos_alt.metodos_alt]};
+
+   metodos_alt {-> metodos_alt} =
+       {procedimento} dec_procedimento {-> dec_procedimento.metodos_alt}
+      |{funcao}       dec_funcao       {-> dec_funcao.metodos_alt};
+
+   dec_obj {-> atributos_alt} =
+      kw_object tipo_classe id dot
+         {-> New atributos_alt.objeto(tipo_classe, id)};
+
+   dec_var {-> atributos_alt} =
+      kw_alterable tipo_primitivo id op_assign exp dot
+         {-> New atributos_alt.variavel(tipo_primitivo, id, exp.exp)};
+
+   dec_cons {-> atributos_alt} =
+      kw_unalterable tipo_primitivo id op_assign exp dot
+         {-> New atributos_alt.constante(tipo_primitivo, id, exp.exp)};
+
+   tipo {-> tipo} =
+       {classe}    tipo_classe    {-> New tipo.classe(tipo_classe)}
+      |{primitivo} tipo_primitivo {-> New tipo.primitivo(tipo_primitivo)};
+
+   tipo_classe {-> tipo_classe} =
+      id_classe {-> New tipo_classe.tipo_classe(id_classe)};
+
+   tipo_primitivo {-> tipo_primitivo} =
+       {answer} kw_answer {-> New tipo_primitivo.answer()}
+      |{number} kw_number {-> New tipo_primitivo.number()};
+
+   procedure_header {-> procedure_header} =
+      kw_procedure id l_bracket parametros r_bracket
+         {-> New procedure_header.procedure_header(id, [parametros.parametro])};
+
+
+   dec_procedimento {-> metodos_alt} =
        {concreto} op_entry? procedure_header bloco_cmd
-      |{abstrato} procedure_header dot;
+            {-> New metodos_alt.procedimento(
+                  op_entry,
+                  procedure_header.procedure_header,
+                  bloco_cmd.bloco_cmd)}
+      |{abstrato} procedure_header dot
+            {-> New metodos_alt.procedimento(
+                  Null,
+                  procedure_header.procedure_header,
+                  Null)};
 
-   procedure_header = kw_procedure id l_bracket parametros r_bracket;
-   
-   dec_funcao =
-      {concreta} function_header bloco_exp
-    | {abstrata} function_header dot;
+   function_header {-> function_header} =
+      kw_function tipo id l_bracket parametros r_bracket
+         {-> New function_header.function_header(tipo.tipo, id, [parametros.parametro])};
+
+   dec_funcao {-> metodos_alt} =
+       {concreta} function_header bloco_exp
+            {-> New metodos_alt.funcao(
+                  function_header.function_header,
+                  bloco_exp.bloco_exp)}
+      |{abstrata} function_header dot
+            {-> New metodos_alt.funcao(
+                  function_header.function_header,
+                  Null)};
+
+   parametros {-> parametro*} =
+       {vazio}
+            {-> []}
+      |{lista} parametro parametros_tail*
+            {-> [parametro.parametro, parametros_tail.parametro]};
+
+   parametros_tail {-> parametro} =
+      pipe parametro
+         {-> parametro.parametro};
+
+   parametro {-> parametro} =
+      tipo id
+         {-> New parametro.parametro(tipo.tipo, id)};
+
+   comando {-> comando} =
+       {matched}   comando_casado     {-> comando_casado.comando}
+      |{unmatched} comando_nao_casado {-> comando_nao_casado.comando};
+
+
+   comando_nao_casado {-> comando} =
+       {if_sem_else} if_expr comando
+            {-> New comando.if(
+                  if_expr.exp,
+                  comando.comando,
+                  Null)}
+      |{if_pendente} if_expr [c1]:comando_casado kw_otherwise [c2]:comando_nao_casado
+            {-> New comando.if(
+                  if_expr.exp,
+                  c1.comando,
+                  c2.comando)}
+      |{while_aberto} [as1]:kw_as kw_long [as2]:kw_as l_par exp r_par comando_nao_casado
+            {-> New comando.while(
+                  exp.exp,
+                  comando_nao_casado.comando)};
+
+   comando_casado {-> comando} =
+       {if} if_expr [c1]:comando_casado kw_otherwise [c2]:comando_casado
+            {-> New comando.if(
+                  if_expr.exp,
+                  c1.comando,
+                  c2.comando)}
+      |{while} [as1]:kw_as kw_long [as2]:kw_as l_par exp r_par comando_casado
+            {-> New comando.while(
+                  exp.exp,
+                  comando_casado.comando)}
+      |{atribuicao} id op_assign exp dot
+            {-> New comando.atribuicao(id, exp.exp)}
+      |{chamada} chamada dot
+            {-> New comando.chamada(chamada.chamada)}
+      |{bloco} bloco_cmd
+            {-> New comando.bloco(bloco_cmd.bloco_cmd)};
+
+   if_expr {-> exp} =
+      kw_in kw_case kw_that l_par exp r_par
+         {-> exp.exp};
+
+   bloco_cmd {-> bloco_cmd} =
+      kw_start atributos_alt* comando* kw_finish
+         {-> New bloco_cmd.bloco_cmd(
+               [atributos_alt.atributos_alt],
+               [comando.comando])};
+
+   chamada {-> chamada} =
+      acesso* id l_bracket lista_exp r_bracket
+         {-> New chamada.chamada([acesso.id], id, [lista_exp.exp])};
+
+   acesso {-> id} =
+      id seta {-> id};
+
+   exp {-> exp} =
+       {ternario} kw_if l_par [exp1]:exp r_par [exp2]:exp kw_else [exp3]:exp
+            {-> New exp.ternario(exp1.exp, exp2.exp, exp3.exp)}
+      |{or} exp_or
+            {-> exp_or.exp};
+
+   exp_or {-> exp} =
+       {or}  exp_or op_or exp_and
+            {-> New exp.or(exp_or.exp, exp_and.exp)}
+      |{and} exp_and
+            {-> exp_and.exp};
+
+   exp_and {-> exp} =
+       {and} exp_and op_and exp_rel
+            {-> New exp.and(exp_and.exp, exp_rel.exp)}
+      |{rel} exp_rel
+            {-> exp_rel.exp};
+
+   exp_rel {-> exp} =
+       {eq}  exp_rel op_eq  exp_add {-> New exp.eq(exp_rel.exp, exp_add.exp)}
+      |{lt}  exp_rel op_lt  exp_add {-> New exp.lt(exp_rel.exp, exp_add.exp)}
+      |{gt}  exp_rel op_gt  exp_add {-> New exp.gt(exp_rel.exp, exp_add.exp)}
+      |{add} exp_add                {-> exp_add.exp};
+
+   exp_add {-> exp} =
+       {plus}  exp_add op_plus  exp_mul {-> New exp.plus(exp_add.exp, exp_mul.exp)}
+      |{minus} exp_add op_minus exp_mul {-> New exp.minus(exp_add.exp, exp_mul.exp)}
+      |{mul}   exp_mul                  {-> exp_mul.exp};
+
+   exp_mul {-> exp} =
+       {mult}   exp_mul op_mult  exp_unario {-> New exp.mult(exp_mul.exp, exp_unario.exp)}
+      |{div}    exp_mul op_div   exp_unario {-> New exp.div(exp_mul.exp, exp_unario.exp)}
+      |{unario} exp_unario                  {-> exp_unario.exp};
+
+   exp_unario {-> exp} =
+       {neg}   op_minus exp_unario {-> New exp.neg(exp_unario.exp)}
+      |{not}   op_not   exp_unario {-> New exp.not(exp_unario.exp)}
+      |{fator} fator               {-> fator.exp};
+
+   fator {-> exp} =
+       {real}       valor_real              {-> New exp.real(valor_real)}
+      |{inteiro}    valor_inteiro           {-> New exp.inteiro(valor_inteiro)}
+      |{yes}        valor_yes               {-> New exp.yes()}
+      |{no}         valor_no                {-> New exp.no()}
+      |{chamada}    chamada                 {-> New exp.chamada(chamada.chamada)}
+      |{atributo}   acesso* atributo        {-> New exp.atributo([acesso.id], atributo.id)}
+      |{parenteses} l_par exp r_par         {-> exp.exp}
+      |{bloco}      bloco_exp               {-> New exp.bloco(bloco_exp.bloco_exp)};
+
+   bloco_exp {-> bloco_exp} =
+      kw_start atributos_alt* exp kw_finish
+         {-> New bloco_exp.bloco_exp(
+               [atributos_alt.atributos_alt],
+               exp.exp)};
+
+   atributo {-> id} =
+      id {-> id};
+
+   lista_exp {-> exp*} =
+       {vazio}
+            {-> []}
+      |{lista} exp lista_exp_tail*
+            {-> [exp.exp, lista_exp_tail.exp]};
+
+   lista_exp_tail {-> exp} =
+      pipe exp {-> exp.exp};
+
+
+Abstract Syntax Tree
+
+   programa =
+      {programa} [relacoes]:relacao* [classes]:def_classe+;
+
+   relacao =
+      {relacao} [filho]:tipo_classe [pai]:tipo_classe;
+
+   def_classe =
+      {def_classe} tipo_classe [atributos]:atributos_alt* [metodos]:metodos_alt*;
+
+   atributos_alt =
+       {objeto}    tipo_classe id
+      |{variavel}  tipo_primitivo id [valor]:exp
+      |{constante} tipo_primitivo id [valor]:exp;
+
+   procedure_header =
+      {procedure_header} id [params]:parametro*;
 
    function_header =
-      kw_function tipo id l_bracket parametros r_bracket;
+      {function_header} tipo id [params]:parametro*;
 
-   parametros = 
-       {vazio}
-      |{lista} parametro parametros_tail*;
 
-   parametros_tail = pipe parametro;
-   parametro = tipo id;
-   
-   comando = 
-      {matched} comando_casado
-      |{unmatched} comando_nao_casado;
-   
-   comando_nao_casado = 
-      {if_sem_else} if_expr comando_nao_casado
-      |{if_pendente} if_expr comando_casado kw_otherwise comando_nao_casado;
+   metodos_alt =
+       {procedimento} op_entry? [header]:procedure_header [corpo]:bloco_cmd?
+      |{funcao}       [header]:function_header [corpo]:bloco_exp?;
 
-   comando_casado = 
-       {if} if_expr [c1]:comando_casado kw_otherwise [c2]:comando_casado
-      |{while} [as1]:kw_as kw_long [as2]:kw_as l_par exp r_par comando
-      |{atribuicao} id op_assign exp dot
-      |{chamada} chamada dot
-      |{bloco} bloco_cmd;
+   parametro =
+      {parametro} tipo id;
 
-   if_expr = kw_in kw_case kw_that l_par exp r_par;
+   tipo =
+       {classe}    tipo_classe
+      |{primitivo} tipo_primitivo;
 
-   bloco_cmd = kw_start atributos_alt* comando* kw_finish;
+   tipo_classe =
+      {tipo_classe} id_classe;
 
-   chamada = acesso* id l_bracket lista_exp r_bracket;
-   acesso = id seta;
+   tipo_primitivo =
+       {answer}
+      |{number};
+
+   comando =
+       {if}         [cond]:exp [verdadeiro]:comando [falso]:comando?
+      |{while}      [cond]:exp [corpo]:comando
+      |{atribuicao} id [valor]:exp
+      |{chamada}    chamada
+      |{bloco}      bloco_cmd;
+
+   bloco_cmd =
+      {bloco_cmd} [atributos]:atributos_alt* [comandos]:comando*;
+
+   chamada =
+      {chamada} [acessos]:id* [nome]:id [args]:exp*;
 
    exp =
-        {ternario} kw_if l_par [exp1]:exp r_par [exp2]:exp kw_else [exp3]:exp
-      | {or} exp_or;
+       {ternario} [cond]:exp [verdadeiro]:exp [falso]:exp
+      |{or}       [esq]:exp [dir]:exp
+      |{and}      [esq]:exp [dir]:exp
+      |{eq}       [esq]:exp [dir]:exp
+      |{lt}       [esq]:exp [dir]:exp
+      |{gt}       [esq]:exp [dir]:exp
+      |{plus}     [esq]:exp [dir]:exp
+      |{minus}    [esq]:exp [dir]:exp
+      |{mult}     [esq]:exp [dir]:exp
+      |{div}      [esq]:exp [dir]:exp
+      |{neg}      [operando]:exp
+      |{not}      [operando]:exp
+      |{real}     valor_real
+      |{inteiro}  valor_inteiro
+      |{yes}
+      |{no}
+      |{chamada}  chamada
+      |{atributo} [acessos]:id* [nome]:id
+      |{bloco}    bloco_exp;
 
-   exp_or =
-        {or} exp_or op_or exp_and
-      | {and} exp_and;
-
-   exp_and =
-         {and} exp_and op_and exp_rel
-      | {rel} exp_rel;
-
-   exp_rel =
-         {eq} exp_rel op_eq exp_add
-      | {lt} exp_rel op_lt exp_add
-      | {gt} exp_rel op_gt exp_add
-      | {add} exp_add;
-
-   exp_add =
-         {plus} exp_add op_plus exp_mul
-      | {minus} exp_add op_minus exp_mul
-      | {mul} exp_mul;
-
-   exp_mul =
-         {mult} exp_mul op_mult exp_unario
-      | {div} exp_mul op_div exp_unario
-      | {unario} exp_unario;
-
-   exp_unario =
-        {neg} op_minus exp_unario
-      | {not} op_not exp_unario
-      | {fator} fator;
-
-
-   fator = 
-      {real} valor_real
-      |{inteiro} valor_inteiro
-      |{yes} valor_yes
-      |{no} valor_no
-      |{chamada} chamada
-      |{atributo} acesso* atributo
-      |{parenteses} l_par exp r_par
-      |{bloco} bloco_exp;
-
-
-   bloco_exp = kw_start atributos_alt* exp kw_finish;
-   atributo = id;
-   lista_exp =
-       {vazio}
-      |{lista} exp lista_exp_tail*;
-   
-   lista_exp_tail = pipe exp;   
-
+   bloco_exp =
+      {bloco_exp} [atributos]:atributos_alt* [valor]:exp;
+      
+      
+      
