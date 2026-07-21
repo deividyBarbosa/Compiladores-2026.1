@@ -4,46 +4,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 
 import dplusplus.analysis.DepthFirstAdapter;
-import dplusplus.node.AAndExp;
-import dplusplus.node.AAtribuicaoComando;
-import dplusplus.node.AAtributoExp;
-import dplusplus.node.ABlocoCmdBlocoCmd;
-import dplusplus.node.ABlocoExp;
-import dplusplus.node.ABlocoExpBlocoExp;
-import dplusplus.node.AChamadaChamada;
-import dplusplus.node.AChamadaExp;
-import dplusplus.node.AConstanteAtributosAlt;
-import dplusplus.node.ADefClasseDefClasse;
-import dplusplus.node.ADivExp;
-import dplusplus.node.AEqExp;
-import dplusplus.node.AFuncaoMetodosAlt;
-import dplusplus.node.AFunctionHeaderFunctionHeader;
-import dplusplus.node.AGtExp;
-import dplusplus.node.AIfComando;
-import dplusplus.node.AInteiroExp;
-import dplusplus.node.ALtExp;
-import dplusplus.node.AMinusExp;
-import dplusplus.node.AMultExp;
-import dplusplus.node.ANegExp;
-import dplusplus.node.ANoExp;
-import dplusplus.node.ANotExp;
-import dplusplus.node.AObjetoAtributosAlt;
-import dplusplus.node.AOrExp;
-import dplusplus.node.AParametroParametro;
-import dplusplus.node.APlusExp;
-import dplusplus.node.AProcedimentoMetodosAlt;
-import dplusplus.node.AProcedureHeaderProcedureHeader;
-import dplusplus.node.ARealExp;
-import dplusplus.node.ATernarioExp;
-import dplusplus.node.AVariavelAtributosAlt;
-import dplusplus.node.AWhileComando;
-import dplusplus.node.AYesExp;
-import dplusplus.node.Node;
-import dplusplus.node.PExp;
-import dplusplus.node.PParametro;
-import dplusplus.node.Start;
-import dplusplus.node.TId;
-import dplusplus.node.Token;
+import dplusplus.node.*;
 
 /**
  * Passo 2 da análise semântica de D++: um visitor (padrão de projeto

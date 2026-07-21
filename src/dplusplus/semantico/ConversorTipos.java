@@ -1,15 +1,6 @@
 package dplusplus.semantico;
 
-import dplusplus.node.AAnswerTipoPrimitivo;
-import dplusplus.node.AClasseTipo;
-import dplusplus.node.ANumberTipoPrimitivo;
-import dplusplus.node.APrimitivoTipo;
-import dplusplus.node.ATipoClasseTipoClasse;
-import dplusplus.node.PTipo;
-import dplusplus.node.PTipoClasse;
-import dplusplus.node.PTipoPrimitivo;
-import dplusplus.node.TIdClasse;
-
+import dplusplus.node.*;
 /**
  * Funções utilitárias (sem estado) que convertem os nós de tipo da árvore
  * sintática abstrata (gerados pelo SableCC a partir da gramática) para a

@@ -8,26 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import dplusplus.node.ADefClasseDefClasse;
-import dplusplus.node.AFuncaoMetodosAlt;
-import dplusplus.node.AFunctionHeaderFunctionHeader;
-import dplusplus.node.AObjetoAtributosAlt;
-import dplusplus.node.AParametroParametro;
-import dplusplus.node.AProcedimentoMetodosAlt;
-import dplusplus.node.AProcedureHeaderProcedureHeader;
-import dplusplus.node.AProgramaPrograma;
-import dplusplus.node.ARelacaoRelacao;
-import dplusplus.node.AVariavelAtributosAlt;
-import dplusplus.node.AConstanteAtributosAlt;
-import dplusplus.node.PAtributosAlt;
-import dplusplus.node.PDefClasse;
-import dplusplus.node.PMetodosAlt;
-import dplusplus.node.PParametro;
-import dplusplus.node.PRelacao;
-import dplusplus.node.Start;
-import dplusplus.node.TId;
-import dplusplus.node.Token;
-
+import dplusplus.node.*;
 /**
  * Passo 1 da análise semântica: percorre a árvore UMA vez, sem usar o
  * DepthFirstAdapter, para registrar todas as classes do programa
